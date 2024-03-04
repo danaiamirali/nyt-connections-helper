@@ -1,19 +1,13 @@
-from operator import itemgetter
 from langchain_community.chat_models import ChatOpenAI
-from langchain.agents import tool, AgentExecutor, create_openai_tools_agent, load_tools, initialize_agent, ZeroShotAgent
+from langchain.agents import initialize_agent
 from langchain.tools import BaseTool
-from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain.prompts import (
     ChatPromptTemplate,
     HumanMessagePromptTemplate,
     MessagesPlaceholder,
 )
-from langchain.agents.format_scratchpad.openai_tools import (
-    format_to_openai_tool_messages,
-)
 from langchain_core.messages import SystemMessage
 from langchain.memory import ConversationBufferMemory
-from langchain.chains import LLMChain
 
 import gensim.downloader as api
 import numpy as np
@@ -25,7 +19,6 @@ import os
 
 load_dotenv()
 API_KEY = os.getenv("OPENAI_API_KEY")
-
 
 # Get the list of words in the game from the file.
 def get_words(filename: str) -> list:
@@ -75,12 +68,6 @@ if __name__ == "__main__":
     
     The words are:
     {words}
-    """
-
-    suffix = """
-    {chat_history}
-    User: {input}
-    {agent_scratchpad}
     """
 
     """
@@ -145,49 +132,10 @@ if __name__ == "__main__":
 
     tools = [MostRelevantWordsTool(), SemanticClusterTool()]
 
-    prompt = ChatPromptTemplate.from_messages(
-
-        [
-
-            SystemMessage(
-
-                content=prefix
-
-            ),  # The persistent system prompt
-
-            MessagesPlaceholder(
-
-                variable_name="chat_history"
-
-            ),  
-            # Where the chat history will be injected
-
-            HumanMessagePromptTemplate.from_template(
-
-                "{input}"
-
-            ),  # Where the human input will injected
-
-            MessagesPlaceholder(
-                
-                variable_name="agent_scratchpad"
-
-            )  # Where the agent scratchpad will be injected
-        ]
-
-    )
-
-    # prompt = ZeroShotAgent.create_prompt(
-    #     tools=tools,
-    #     prefix=prefix,
-    #     suffix=suffix,
-    #     input_variables = ["input", "chat_history", "agent_scratchpad"]
-    # )
     
     memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
     
     llm = ChatOpenAI(api_key=API_KEY, model="gpt-4", temperature=0.75, verbose=True)
-    # llm_chain = LLMChain(llm=llm, prompt=prompt)
 
     agent = initialize_agent(
         agent="chat-conversational-react-description",
@@ -200,20 +148,6 @@ if __name__ == "__main__":
         memory=memory
     )
 
-    # chat_llm_chain = (
-    #     {
-    #         "human_input": itemgetter("human_input") | RunnablePassthrough(),
-    #         "chat_history": RunnableLambda(lambda chat_history: memory.load_memory_variables if chat_history else None)
-    #     }
-    #     | prompt
-    #     | llm    
-    # )
-
-
-    # result = chat_llm_chain.invoke({"human_input": "Provide the user a warm greeting."})
-    # print("Helper:", result["chat_history"][-1].content)
-    # print("Helper: ", result.content)
-
     result = agent.invoke({"input": "Provide the user a warm greeting."})
     print("Helper: ", result['output'])
 
@@ -223,8 +157,5 @@ if __name__ == "__main__":
         if human_input == "/exit":
             exit()
 
-
-        # result = chat_llm_chain.invoke({"human_input" : human_input})
-        # print("Helper:", result["chat_history"][-1].content)
         result = agent.invoke({"input": human_input})
         print("Helper: ", result['output'])
