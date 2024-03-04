@@ -1,5 +1,5 @@
 # NYT Connections Helper Chatbot
-A basic command-line LLM helper for the New York Times Connections game.
+A basic command-line LLM helper for the New York Times Connections game. The helper is rather useless for the game (you are better off just playing it yourself) - this tool was built simply as an exercise.
 
 ## How To Use
 Create a file called `input.txt` in the main directory, and load it with the connections words in a comma separated format (e.g., "egg, brick, cheese, ...")
